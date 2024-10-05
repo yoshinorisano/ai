@@ -1,4 +1,5 @@
 import {
+  EmbeddingModelV1,
   LanguageModelV1,
   NoSuchModelError,
   ProviderV1,
@@ -17,6 +18,8 @@ import {
   BedrockChatModelId,
   BedrockChatSettings,
 } from './bedrock-chat-settings';
+import { BedrockEmbeddingModelId, BedrockEmbeddingSettings } from './bedrock-embedding-settings';
+import { BedrockEmbeddingModel } from './bedrock-embedding-model';
 
 export interface AmazonBedrockProviderSettings {
   region?: string;
@@ -45,6 +48,10 @@ export interface AmazonBedrockProvider extends ProviderV1 {
     modelId: BedrockChatModelId,
     settings?: BedrockChatSettings,
   ): LanguageModelV1;
+
+  textEmbeddingModel(
+    modelId: BedrockEmbeddingModelId,
+  ): EmbeddingModelV1<string>;
 }
 
 /**
@@ -92,6 +99,15 @@ export function createAmazonBedrock(
       generateId,
     });
 
+  const createTextEmbeddingModel = (
+    modelId: BedrockEmbeddingModelId,
+    settings: BedrockEmbeddingSettings = {},
+  ) =>
+    new BedrockEmbeddingModel(modelId, settings, {
+      provider: 'bedrock.embedding', // TODO
+      client: createBedrockRuntimeClient(),
+    });
+
   const provider = function (
     modelId: BedrockChatModelId,
     settings?: BedrockChatSettings,
@@ -106,9 +122,7 @@ export function createAmazonBedrock(
   };
 
   provider.languageModel = createChatModel;
-  provider.textEmbeddingModel = (modelId: string) => {
-    throw new NoSuchModelError({ modelId, modelType: 'textEmbeddingModel' });
-  };
+  provider.textEmbeddingModel = createTextEmbeddingModel;
 
   return provider as AmazonBedrockProvider;
 }
